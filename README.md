@@ -11,7 +11,7 @@ Under Node-Red:
 
 **In node-red exec node**
 
-ffmpeg -i rtsp://admin:password@192.168.1.41:554/ch01.264 -s 640x480 -b:v 1000k -r 8 -t 30 -y -vcodec copy -an
+"ffmpeg -i rtsp://admin:password@192.168.1.41:554/ch01.264 -s 640x480 -b:v 1000k -r 8 -t 30 -y -vcodec copy -an"
 
 rtsp://admin:password@192.168.1.41:554 >> username, password, IP address of the camera
 
