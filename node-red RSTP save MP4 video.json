@@ -1,0 +1,174 @@
+[
+    {
+        "id": "1c4d41e8.c597be",
+        "type": "function",
+        "z": "9efa042c.1ed728",
+        "name": "Statistics",
+        "func": "var now = new Date();\nvar stat = context.get(\"stat\");\nif (stat===undefined) {\n    // Initialize the object in case NR restart\n    stat = { \"count\": 0, \"success\": 0, \"rate\": 0.0, \"last\": now};\n}\nif (msg.topic===\"reset\") {\n    // Reset message was received: reset statistics\n    stat = { \"count\": 0, \"success\": 0, \"rate\": 0.0, \"last\": now};\n} else {\n    // Update statistics\n    stat.count++;\n    if (msg.payload.code===0) {\n        stat.success++;\n    }    \n    stat.rate=stat.success/stat.count;\n    stat.last=now;\n}\n\n// Create formatted time\nvar yyyy = now.getFullYear();\nvar mm = now.getMonth() < 9 ? \"0\" + (now.getMonth() + 1) : (now.getMonth() + 1); // getMonth() is zero-based\nvar dd  = now.getDate() < 10 ? \"0\" + now.getDate() : now.getDate();\nvar hh = now.getHours() < 10 ? \"0\" + now.getHours() : now.getHours();\nvar mmm  = now.getMinutes() < 10 ? \"0\" + now.getMinutes() : now.getMinutes();\nvar ss  = now.getSeconds() < 10 ? \"0\" + now.getSeconds() : now.getSeconds();\n\nmsg.formattedtime = dd + \".\" + mm + \".\" + yyyy + \" \" + hh + \":\" + mmm + \":\" + ss;\nmsg.success = stat.success;\nmsg.rate = Math.floor(stat.rate*100);\n\nnode.status({fill:\"blue\",shape:\"ring\",text:\"Videos: \"+msg.success+\" | \"+msg.rate+\"% | Last update: \"+dd + \".\" + mm + \".\" + yyyy + \" \" + hh + \":\" + mmm + \":\" + ss});\n\n\n// Saving data in the context\ncontext.set(\"stat\",stat);\n\nreturn msg;\n\n\n",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 680,
+        "y": 1160,
+        "wires": [
+            [
+                "c7d29921.7b3a88",
+                "dec88d14.74771",
+                "9131b705.d7da98"
+            ]
+        ]
+    },
+    {
+        "id": "a5aeed17.49a44",
+        "type": "exec",
+        "z": "9efa042c.1ed728",
+        "command": "ffmpeg -i rtsp://admin:@192.168.1.41:554/ch01.264 -s 640x480 -b:v 1000k -r 8 -t 30 -y -vcodec copy -an ",
+        "addpay": "payload",
+        "append": "",
+        "useSpawn": "false",
+        "timer": "",
+        "winHide": false,
+        "oldrc": false,
+        "name": "Capture video",
+        "x": 571.9999847412109,
+        "y": 959.9999771118164,
+        "wires": [
+            [
+                "a9b89709.b65498",
+                "677574cb.bbb1fc",
+                "2664e0ab.3ccb"
+            ],
+            [
+                "8a971c90.ebe9b"
+            ],
+            [
+                "67d53350.bb09dc",
+                "1c4d41e8.c597be"
+            ]
+        ]
+    },
+    {
+        "id": "8a971c90.ebe9b",
+        "type": "file",
+        "z": "9efa042c.1ed728",
+        "name": "",
+        "filename": "/home/pi/avconv.out",
+        "filenameType": "str",
+        "appendNewline": true,
+        "createDir": true,
+        "overwriteFile": "true",
+        "x": 868.0000152587891,
+        "y": 1000.0000228881836,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "67d53350.bb09dc",
+        "type": "debug",
+        "z": "9efa042c.1ed728",
+        "name": "",
+        "active": true,
+        "console": "false",
+        "complete": "true",
+        "x": 778.0000152587891,
+        "y": 1040.0000228881836,
+        "wires": []
+    },
+    {
+        "id": "677574cb.bbb1fc",
+        "type": "debug",
+        "z": "9efa042c.1ed728",
+        "name": "",
+        "active": true,
+        "console": "false",
+        "complete": "true",
+        "x": 778.0000152587891,
+        "y": 960.0000228881836,
+        "wires": []
+    },
+    {
+        "id": "3fc38f78.17dab",
+        "type": "function",
+        "z": "9efa042c.1ed728",
+        "name": "Video capture",
+        "func": "var now = new Date();\n// Create formatted time\nvar yyyy = now.getFullYear();\nvar mm = now.getMonth() < 9 ? \"0\" + (now.getMonth() + 1) : (now.getMonth() + 1); // getMonth() is zero-based\nvar dd  = now.getDate() < 10 ? \"0\" + now.getDate() : now.getDate();\nvar hh = now.getHours() < 10 ? \"0\" + now.getHours() : now.getHours();\nvar mmm  = now.getMinutes() < 10 ? \"0\" + now.getMinutes() : now.getMinutes();\nvar ss  = now.getSeconds() < 10 ? \"0\" + now.getSeconds() : now.getSeconds();\n\n// Last update: \"+dd + \".\" + mm + \".\" + yyyy + \" \" + hh + \":\" + mmm + \":\" + ss});\n\n// file path with / at the end\nvar path = \"/home/pi/node-red-static/\";                     // This is the path\nvar filename = \"video_\"+yyyy+mm+dd+\"-\"+hh+mmm+ss+\".mp4\";     // file name\nmsg.payload = path + filename;                              // pass the full path to payload for the exec node to add to the end of the command\nmsg.file = filename;                                        // To be used later to store the information in the DB\nmsg.path = path;                                            // Same as above\nmsg.wwwpath = \"/\";                                          // Same as above\nmsg.topic = \"store\";                                        // Flag to store this image in the DB\nmsg.type = \"videotest\";                                     // Image type e.g. Front camera, etc.\nmsg.epoch = now.getTime();                                  // Current timestamp\nmsg.formatteddate = dd + \".\" + mm + \".\" + yyyy + \" \" + hh + \":\" + mmm + \":\" + ss;   // Formatted timestamp to be used later\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 320,
+        "y": 1060,
+        "wires": [
+            [
+                "a5aeed17.49a44"
+            ]
+        ]
+    },
+    {
+        "id": "db6e6672.8e0358",
+        "type": "change",
+        "z": "9efa042c.1ed728",
+        "name": "Set filename",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "/home/pi/node-red-static/video.mp4",
+                "tot": "str"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 298.00001525878906,
+        "y": 960.0000228881836,
+        "wires": [
+            [
+                "a5aeed17.49a44"
+            ]
+        ]
+    },
+    {
+        "id": "848f3283.66a9a",
+        "type": "inject",
+        "z": "9efa042c.1ed728",
+        "name": "",
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 128.00001525878906,
+        "y": 1000.0000228881836,
+        "wires": [
+            [
+                "db6e6672.8e0358"
+            ]
+        ]
+    },
+    {
+        "id": "f752e943.e325d8",
+        "type": "inject",
+        "z": "9efa042c.1ed728",
+        "name": "",
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 128.00001525878906,
+        "y": 1080.0000228881836,
+        "wires": [
+            [
+                "3fc38f78.17dab",
+                "7dacbce2dd810c93"
+            ]
+        ]
+    }
+]
